@@ -15,6 +15,7 @@ import { UserModule } from './app/user/user.module';
 import { UserService } from './app/user/user.service';
 import { User } from './app/user/dtos/user.dto';
 import { UserHook } from './app/user/user.hook';
+import { AbilityFactory } from '../factories/ability.factory';
 
 const getUser = (role: Roles, id = 'userId') => ({ id, roles: [role] });
 
@@ -35,6 +36,7 @@ const createCaslTestingModule = async (
   caslOptions: OptionsForRoot<Roles>,
   postService: PostService,
   userService: UserService,
+  abilityFactory?: AbilityFactory,
 ): Promise<INestApplication> => {
   const moduleRef = await Test.createTestingModule({
     imports: [
@@ -46,7 +48,7 @@ const createCaslTestingModule = async (
         playground: false,
         debug: true,
       }),
-      CaslModule.forRoot<Roles>(caslOptions),
+      CaslModule.forRoot<Roles>(caslOptions, abilityFactory ? { provide: AbilityFactory, useClass: abilityFactory } : undefined),
     ],
   })
     .overrideProvider(PostService)
@@ -518,6 +520,27 @@ describe('Graphql resolver with authorization', () => {
     it(`should get conditions proxy without hook`, async () => {
       await graphql(app).send(Mutations.UPDATE_POST_CONDITION_PARAM_NO_HOOK).expect(200);
       expect(postService.update).toBeCalledWith(post, expectedSqlConditions);
+    });
+  });
+
+  describe('Custom AbilityFactory', () => {
+    class CustomAbilityFactory extends AbilityFactory {
+      // Custom logic for the AbilityFactory
+    }
+
+    beforeEach(async () => {
+      app = await createCaslTestingModule(
+        {
+          getUserFromRequest: () => getUser(Roles.customer),
+        },
+        postService,
+        userService,
+        CustomAbilityFactory,
+      );
+    });
+
+    it(`should use the custom AbilityFactory`, async () => {
+      // Add your test logic here to verify that the custom AbilityFactory is used
     });
   });
 });
