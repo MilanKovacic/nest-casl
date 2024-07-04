@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, Inject } from '@nestjs/common';
 import { Ability, AnyAbility, subject } from '@casl/ability';
 import { AnyObject, Subject } from '@casl/ability/dist/types/types';
 import { flatten } from 'flat';
@@ -14,7 +14,7 @@ import { ConditionsProxy } from './proxies/conditions.proxy';
 
 @Injectable()
 export class AccessService {
-  constructor(private abilityFactory: AbilityFactory) {}
+  constructor(@Inject(AbilityFactory) private abilityFactory: AbilityFactory) {}
 
   public getAbility<User extends AuthorizableUser<string, unknown> = AuthorizableUser>(user: User): AnyAbility {
     return this.abilityFactory.createForUser(user);

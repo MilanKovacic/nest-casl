@@ -447,3 +447,65 @@ interface CustomAuthorizableRequest {
 })
 export class AppModule {}
 ```
+
+### Custom AbilityFactory
+
+You can provide your own `AbilityFactory` by passing it as an optional parameter to the `forRoot` or `forRootAsync` methods of `CaslModule`.
+
+```typescript
+import { Module } from '@nestjs/common';
+import { CaslModule, AbilityFactory } from 'nest-casl';
+import { Roles } from './app.roles';
+
+class CustomAbilityFactory extends AbilityFactory {
+  // Override methods or add custom logic here
+}
+
+@Module({
+  imports: [
+    CaslModule.forRoot<Roles>({
+      superuserRole: Roles.admin,
+      getUserFromRequest: (request) => request.currentUser,
+    }, {
+      provide: AbilityFactory,
+      useClass: CustomAbilityFactory,
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+You can also use `forRootAsync` to provide a custom `AbilityFactory`.
+
+```typescript
+import { Module } from '@nestjs/common';
+import { CaslModule, AbilityFactory } from 'nest-casl';
+import { Roles } from './app.roles';
+
+class CustomAbilityFactory extends AbilityFactory {
+  // Override methods or add custom logic here
+}
+
+@Module({
+  imports: [
+    CaslModule.forRootAsync<Roles>({
+      useFactory: async (service: SomeCoolService) => {
+        const isOk = await service.doSomething();
+
+        return {
+          getUserFromRequest: () => {
+            if (isOk) {
+              return request.user;
+            }
+          },
+        };
+      },
+      inject: [SomeCoolService],
+    }, {
+      provide: AbilityFactory,
+      useClass: CustomAbilityFactory,
+    }),
+  ],
+})
+export class AppModule {}
+```

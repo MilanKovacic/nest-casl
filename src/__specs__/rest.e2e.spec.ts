@@ -11,6 +11,7 @@ import { UserModule } from './app/user/user.module';
 import { UserService } from './app/user/user.service';
 import { User } from './app/user/dtos/user.dto';
 import { Post } from './app/post/dtos/post.dto';
+import { AbilityFactory } from '../factories/ability.factory';
 
 const getUser = (role: Roles, id = 'userId') => ({ id, roles: [role] });
 
@@ -83,5 +84,40 @@ describe('REST controller with CASL authorization', () => {
 
   it(`allows /PUT posts/:id`, async () => {
     return request(app.getHttpServer()).put('/posts/postId').expect(200);
+  });
+
+  describe('Custom AbilityFactory', () => {
+    class CustomAbilityFactory extends AbilityFactory {
+      // Custom logic for the AbilityFactory
+    }
+
+    beforeEach(async () => {
+      const moduleRef = await Test.createTestingModule({
+        imports: [
+          PostModule,
+          UserModule,
+          CaslModule.forRootAsync<Roles>({
+            useFactory: () => ({
+              getUserFromRequest: () => getUser(Roles.customer),
+            }),
+          }, {
+            provide: AbilityFactory,
+            useClass: CustomAbilityFactory,
+          }),
+        ],
+      })
+        .overrideProvider(PostService)
+        .useValue(postService)
+        .overrideProvider(UserService)
+        .useValue(userService)
+        .compile();
+
+      app = moduleRef.createNestApplication();
+      await app.init();
+    });
+
+    it(`should use the custom AbilityFactory`, async () => {
+      // Add your test logic here to verify that the custom AbilityFactory is used
+    });
   });
 });

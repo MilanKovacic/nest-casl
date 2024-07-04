@@ -1,5 +1,5 @@
 import { Subject } from '@casl/ability';
-import { DynamicModule, Module } from '@nestjs/common';
+import { DynamicModule, Module, Provider } from '@nestjs/common';
 import { DefaultActions } from './actions.enum';
 
 import { OptionsForFeature, OptionsForRoot, OptionsForRootAsync } from './interfaces/options.interface';
@@ -14,7 +14,10 @@ import { AuthorizableRequest } from './interfaces/request.interface';
   imports: [],
   providers: [
     AccessService,
-    AbilityFactory,
+    {
+      provide: AbilityFactory,
+      useClass: AbilityFactory,
+    },
     {
       provide: CASL_FEATURE_OPTIONS,
       useValue: {},
@@ -32,10 +35,12 @@ export class CaslModule {
     return {
       module: CaslModule,
       imports: [],
-      // exports: [AccessService],
       providers: [
         AccessService,
-        AbilityFactory,
+        {
+          provide: AbilityFactory,
+          useClass: AbilityFactory,
+        },
         {
           provide: CASL_FEATURE_OPTIONS,
           useValue: options,
@@ -48,10 +53,16 @@ export class CaslModule {
     Roles extends string = string,
     User extends AuthorizableUser<unknown, unknown> = AuthorizableUser<Roles>,
     Request = AuthorizableRequest<User>,
-  >(options: OptionsForRoot<Roles, User, Request>): DynamicModule {
+  >(options: OptionsForRoot<Roles, User, Request>, abilityFactory?: Provider): DynamicModule {
     Reflect.defineMetadata(CASL_ROOT_OPTIONS, options, CaslConfig);
     return {
       module: CaslModule,
+      providers: [
+        abilityFactory || {
+          provide: AbilityFactory,
+          useClass: AbilityFactory,
+        },
+      ],
     };
   }
 
@@ -59,7 +70,7 @@ export class CaslModule {
     Roles extends string = string,
     User extends AuthorizableUser<unknown, unknown> = AuthorizableUser<Roles>,
     Request = AuthorizableRequest<User>,
-  >(options: OptionsForRootAsync<Roles, User, Request>): DynamicModule {
+  >(options: OptionsForRootAsync<Roles, User, Request>, abilityFactory?: Provider): DynamicModule {
     return {
       module: CaslModule,
       imports: options.imports,
@@ -73,6 +84,10 @@ export class CaslModule {
             return caslRootOptions;
           },
           inject: options.inject,
+        },
+        abilityFactory || {
+          provide: AbilityFactory,
+          useClass: AbilityFactory,
         },
       ],
     };
